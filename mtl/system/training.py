@@ -5,7 +5,12 @@ from jaffalearn.data import DataLoaderFactory, MixedDataLoaderFactory
 
 import system.models as models
 import system.utils as utils
-from system import Baseline, LabelNoise
+from system import (
+    Baseline,
+    LabelNoise,
+    MultiTaskDataLoader,
+    MultiTaskSystem,
+)
 
 
 def train(log_dir,
@@ -20,6 +25,7 @@ def train(log_dir,
           model='vgg11a',
           weights_path=None,
           label_noise=None,
+          mtl_params=None,
           n_epochs=1,
           batch_size=1,
           lr=0.001,
@@ -40,7 +46,10 @@ def train(log_dir,
         'n_classes': len(train_set.dataset.label_set),
     }
     model = models.create_model(**model_args)
-    system = Baseline(model, lr, lr_scheduler, model_args)
+    if mtl_params:
+        system = MultiTaskSystem(model, lr, lr_scheduler, model_args)
+    else:
+        system = Baseline(model, lr, lr_scheduler, model_args)
     device = utils.determine_device(cuda)
     engine = Engine(system, device)
 
@@ -80,7 +89,15 @@ def train(log_dir,
     loader_val = factory.validation_data_loader(val_set)
     if label_noise:
         factory.labeler = LabelNoise(**label_noise).relabeler(train_set)
-    loader_train = factory.training_data_loader(train_set)
+    if mtl_params:
+        block_lengths = partition['block_lengths']
+        factory.block_lengths = [int(b * 0.25) for b in block_lengths]
+        loader_clean = factory.training_data_loader(train_set['verified==1'])
+        factory.block_lengths = [int(b * 0.75) for b in block_lengths]
+        loader_noisy = factory.training_data_loader(train_set['verified==0'])
+        loader_train = MultiTaskDataLoader(loader_clean, loader_noisy)
+    else:
+        loader_train = factory.training_data_loader(train_set)
 
     print('\n', model, '\n', sep='')
 

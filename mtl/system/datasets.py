@@ -35,6 +35,10 @@ def mix_subsets(noisy_train_set, clean_train_set, frac, seed=None):
     mask = ~noisy_train_set.tags.index.isin(df.index)
     noisy_train_set = noisy_train_set[mask]
 
+    # Add flag to differentiate the subsets
+    clean_train_set.tags['verified'] = 1
+    noisy_train_set.tags['verified'] = 0
+
     return jd.concat([noisy_train_set, clean_train_set], name='training')
 
 

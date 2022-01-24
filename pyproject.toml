@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "arca23k-baseline"
+name = "noisy-mtl"
 version = "0.1.0"
-description = "The ARCA23K baseline system"
+description = "noisy-mtl"
 authors = ["Turab Iqbal <t.iqbal@surrey.ac.uk>"]
 license = "ISC"
 
